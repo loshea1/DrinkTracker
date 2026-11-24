@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14221a">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Dry Days</title>
+<style>
+:root{--bg:#101b19;--panel:#1c2c26;--panel2:#21332b;--text:#f2f6f1;--muted:#a5b7ad;--line:#33443b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:760px;margin:auto;padding:22px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.brand{font-size:19px;font-weight:750;letter-spacing:.2px}.brand span{color:#85c99c}
+h1{font-size:29px;margin:0 0 5px}h2{font-size:21px;margin:0}
+.sub{color:var(--muted);font-size:13px}
+.summary{background:var(--panel);border-radius:18px;padding:16px;margin:22px 0}
+.kicker{font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:700}
+.total{font-size:34px;font-weight:750;margin:5px 0}.month-head{display:flex;justify-content:space-between;align-items:center;margin:24px 0 14px}
+.nav{display:flex;gap:8px}.nav button{width:38px;height:36px;padding:0}
+button{border:0;border-radius:11px;padding:11px 15px;font-weight:650;font-size:14px;cursor:pointer}
+.secondary{background:#304239;color:white}.primary{background:#4caf79;color:#102219}.outline{background:transparent;border:1px solid #61766a;color:white}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.weekday{text-align:center;color:#91a79b;font-size:12px;padding:5px 0}
+.day{aspect-ratio:1;border-radius:10px;background:#46a878;color:#14221a;display:grid;place-items:center;font-weight:650;position:relative;padding:0}
+.day.empty{visibility:hidden}.day.selected{outline:3px solid white;outline-offset:1px}.day.blackout{background:#000!important;color:#fff}
+.legend{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:16px 0 28px;color:var(--muted);font-size:11px}
+.swatch{width:14px;height:14px;border-radius:4px;display:inline-block}
+hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+.year-title{margin-bottom:7px}.year-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 12px;margin-top:18px}
+.mini-title{font-size:12px;font-weight:700;color:#d7e4db;margin-bottom:7px}
+.mini{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.mini-day{aspect-ratio:1;border-radius:2px;background:#46a878}.mini-day.empty{background:transparent}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.stat{background:var(--panel);padding:15px;border-radius:14px}.stat strong{display:block;font-size:26px}.stat span{font-size:12px;color:var(--muted)}
+footer{text-align:center;color:#71877a;font-size:11px;margin-top:28px}
+.modal-backdrop{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;padding:12px;z-index:5}
+.modal-backdrop.show{display:flex}.modal{background:#21332b;border:1px solid #597262;border-radius:24px 24px 18px 18px;width:min(100%,480px);padding:21px;box-shadow:0 15px 60px #0008}
+.modal-top{display:flex;justify-content:space-between;align-items:center}.close{background:transparent;color:white;font-size:24px;padding:0 6px}
+.count{text-align:center;font-size:48px;font-weight:750;margin:18px 0 2px}.count-label{text-align:center;color:var(--muted);font-size:13px}
+.controls{display:flex;justify-content:center;gap:12px;margin:17px 0 20px}.controls button{min-width:105px}
+.blackout-btn{width:100%;background:#3c3435;color:white;border:1px solid #735354;padding:16px;margin:2px 0 16px}
+.blackout-btn.active{background:#000;border:2px solid #fff}
+.save{width:100%;padding:14px}.hint{font-size:12px;color:var(--muted);line-height:1.45;margin-top:12px}
+@media(min-width:600px){.modal-backdrop{align-items:center}.modal{border-radius:24px}.year-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="brand"><span>●</span> Dry Days</div><div class="sub" id="yearLabel"></div></header>
+<h1>Your drinking calendar</h1><div class="sub">Track your days without judgment.</div>
+<section class="summary"><div class="kicker" id="summaryMonth">MONTH TOTAL</div><div class="total" id="monthTotal">0</div><div class="sub">drinks this month</div></section>
+<div class="month-head"><h2 id="monthTitle"></h2><div class="nav"><button class="secondary" id="prevMonth" aria-label="Previous month">‹</button><button class="secondary" id="nextMonth" aria-label="Next month">›</button></div></div>
+<div class="calendar" id="calendar"></div>
+<div class="legend"><span>0</span><i class="swatch" style="background:#46a878"></i><i class="swatch" style="background:#a9c96b"></i><i class="swatch" style="background:#e5d45d"></i><i class="swatch" style="background:#f0a34f"></i><i class="swatch" style="background:#e87552"></i><i class="swatch" style="background:#c94343"></i><span>5+</span><i class="swatch" style="background:#000;border:1px solid #777"></i><span>Blacked out</span></div>
+<hr>
+<h2 class="year-title">Year at a glance</h2><div class="sub">A full-year view of your patterns.</div>
+<div class="year-grid" id="yearGrid"></div>
+<hr>
+<h2>Year statistics</h2><div class="stats"><div class="stat"><strong id="yearTotal">0</strong><span>Total drinks logged</span></div><div class="stat"><strong id="zeroDays">0</strong><span>Days logged as zero</span></div><div class="stat"><strong id="blackoutDays">0</strong><span>Blacked-out days</span></div><div class="stat"><strong id="average">0</strong><span>Average drinks per logged day</span></div></div>
+<footer>Your entries are saved on this device.</footer>
+</main>
+<div class="modal-backdrop" id="backdrop">
+<section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+<div class="modal-top"><span class="kicker">TRACK YOUR DAY</span><button class="close" id="close" aria-label="Close">×</button></div>
+<h2 id="modalTitle" style="margin-top:8px"></h2>
+<div class="count" id="drinkCount">0</div><div class="count-label">drinks today</div>
+<div class="controls"><button class="secondary" id="minus">− Remove</button><button class="primary" id="plus">＋ Add drink</button></div>
+<button class="blackout-btn" id="blackout">◉ &nbsp; Blacked Out<br><small id="blackoutHint">Tap to mark this day as blacked out</small></button>
+<button class="primary save" id="save">Save day</button>
+<div class="hint">A blacked-out day appears black on both calendars, regardless of the drink count. You can still record drinks for that day.</div>
+</section>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const today=new Date();let shown=new Date(today.getFullYear(),today.getMonth(),1);
+let selectedKey=null, draft={count:0,blackout:false};
+let records={};
+try{records=JSON.parse(localStorage.getItem('dry-days-records')||'{}')}catch(e){records={}}
+const colors=['#46a878','#a9c96b','#e5d45d','#f0a34f','#e87552','#c94343'];
+const key=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const getRec=k=>records[k]||{count:0,blackout:false};
+const color=r=>r.blackout?'#000':colors[Math.min(Math.max(0,r.count||0),5)];
+function saveRecords(){localStorage.setItem('dry-days-records',JSON.stringify(records))}
+function render(){
+ const y=shown.getFullYear(),m=shown.getMonth(),name=shown.toLocaleString(undefined,{month:'long'});
+ $('yearLabel').textContent=y;$('monthTitle').textContent=`${name} ${y}`;$('summaryMonth').textContent=`${name.toUpperCase()} TOTAL`;
+ let total=0;Object.keys(records).forEach(k=>{if(k.startsWith(`${y}-${String(m+1).padStart(2,'0')}-`))total+=Number(records[k].count)||0});
+ $('monthTotal').textContent=total;
+ const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),cal=$('calendar');cal.innerHTML='';
+ ['S','M','T','W','T','F','S'].forEach(d=>{let e=document.createElement('div');e.className='weekday';e.textContent=d;cal.append(e)});
+ for(let i=0;i<first;i++){let e=document.createElement('div');e.className='day empty';cal.append(e)}
+ for(let d=1;d<=days;d++){let k=key(y,m,d),r=getRec(k),b=document.createElement('button');b.className='day'+(r.blackout?' blackout':'')+(k===selectedKey?' selected':'');b.style.background=color(r);b.textContent=d;b.addEventListener('click',()=>openDay(k));cal.append(b)}
+ renderYear(y);
+ const entries=Object.entries(records).filter(([k])=>k.startsWith(`${y}-`));
+ $('yearTotal').textContent=entries.reduce((a,[,r])=>a+(Number(r.count)||0),0);
+ $('zeroDays').textContent=entries.filter(([,r])=>!r.blackout&&r.count===0).length;
+ $('blackoutDays').textContent=entries.filter(([,r])=>r.blackout).length;
+ const logged=entries.filter(([,r])=>!r.blackout);
+ $('average').textContent=logged.length?(entries.reduce((a,[,r])=>a+(Number(r.count)||0),0)/logged.length).toFixed(1):'0';
+}
+function renderYear(y){const grid=$('yearGrid');grid.innerHTML='';for(let m=0;m<12;m++){let wrap=document.createElement('div'),title=document.createElement('div'),mini=document.createElement('div');title.className='mini-title';title.textContent=new Date(y,m,1).toLocaleString(undefined,{month:'long'});mini.className='mini';let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();for(let i=0;i<first;i++){let e=document.createElement('i');e.className='mini-day empty';mini.append(e)}for(let d=1;d<=days;d++){let e=document.createElement('i');e.className='mini-day';e.style.background=color(getRec(key(y,m,d)));e.title=`${title.textContent} ${d}: ${getRec(key(y,m,d)).blackout?'Blacked out':getRec(key(y,m,d)).count+' drinks'}`;mini.append(e)}wrap.append(title,mini);grid.append(wrap)}}
+function openDay(k){selectedKey=k;let r=getRec(k);draft={count:r.count||0,blackout:!!r.blackout};$('modalTitle').textContent=new Date(k+'T12:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});updateModal();$('backdrop').classList.add('show');render()}
+function updateModal(){$('drinkCount').textContent=draft.count;$('blackout').classList.toggle('active',draft.blackout);$('blackoutHint').textContent=draft.blackout?'Marked as blacked out — tap to undo':'Tap to mark this day as blacked out'}
+function closeModal(){$('backdrop').classList.remove('show')}
+$('plus').onclick=()=>{draft.count++;updateModal()};$('minus').onclick=()=>{draft.count=Math.max(0,draft.count-1);updateModal()};$('blackout').onclick=()=>{draft.blackout=!draft.blackout;updateModal()};
+$('save').onclick=()=>{records[selectedKey]={...draft};saveRecords();closeModal();render()};
+$('close').onclick=closeModal;$('backdrop').addEventListener('click',e=>{if(e.target===$('backdrop'))closeModal()});
+$('prevMonth').onclick=()=>{shown.setMonth(shown.getMonth()-1);render()};$('nextMonth').onclick=()=>{shown.setMonth(shown.getMonth()+1);render()};
+render();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>

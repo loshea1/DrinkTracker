@@ -1,0 +1,9 @@
+{
+  "name": "Dry Days Drink Tracker",
+  "short_name": "Dry Days",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#101b19",
+  "theme_color": "#14221a",
+  "description": "A private calendar for tracking daily drinks."
+}
