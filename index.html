@@ -23,14 +23,14 @@ button{border:0;border-radius:11px;padding:11px 15px;font-weight:650;font-size:1
 .calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .weekday{text-align:center;color:#91a79b;font-size:12px;padding:5px 0}
 .day{aspect-ratio:1;border-radius:10px;background:#46a878;color:#14221a;display:grid;place-items:center;font-weight:650;position:relative;padding:0}
-.day.empty{visibility:hidden}.day.selected{outline:3px solid white;outline-offset:1px}.day.blackout{background:#000!important;color:#fff}
+.day.empty{visibility:hidden}.day.selected{outline:3px solid white;outline-offset:1px}.day.today{box-shadow:inset 0 0 0 2px #fff}.day.blackout{background:#000!important;color:#fff}
 .legend{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:16px 0 28px;color:var(--muted);font-size:11px}
 .swatch{width:14px;height:14px;border-radius:4px;display:inline-block}
 hr{border:0;border-top:1px solid var(--line);margin:26px 0}
 .year-title{margin-bottom:7px}.year-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 12px;margin-top:18px}
 .mini-title{font-size:12px;font-weight:700;color:#d7e4db;margin-bottom:7px}
 .mini{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
-.mini-day{aspect-ratio:1;border-radius:2px;background:#46a878}.mini-day.empty{background:transparent}
+.mini-day{aspect-ratio:1;border-radius:2px;background:transparent}.mini-day.empty{background:transparent}.mini-day.today{outline:1px solid #fff;outline-offset:1px}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
 .stat{background:var(--panel);padding:15px;border-radius:14px}.stat strong{display:block;font-size:26px}.stat span{font-size:12px;color:var(--muted)}
 footer{text-align:center;color:#71877a;font-size:11px;margin-top:28px}
@@ -80,7 +80,7 @@ try{records=JSON.parse(localStorage.getItem('dry-days-records')||'{}')}catch(e){
 const colors=['#46a878','#a9c96b','#e5d45d','#f0a34f','#e87552','#c94343'];
 const key=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const getRec=k=>records[k]||{count:0,blackout:false};
-const color=r=>r.blackout?'#000':colors[Math.min(Math.max(0,r.count||0),5)];
+const color=(r,exists=true)=>!exists?'transparent':r.blackout?'#000':colors[Math.min(Math.max(0,r.count||0),5)];
 function saveRecords(){localStorage.setItem('dry-days-records',JSON.stringify(records))}
 function render(){
  const y=shown.getFullYear(),m=shown.getMonth(),name=shown.toLocaleString(undefined,{month:'long'});
@@ -90,7 +90,7 @@ function render(){
  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),cal=$('calendar');cal.innerHTML='';
  ['S','M','T','W','T','F','S'].forEach(d=>{let e=document.createElement('div');e.className='weekday';e.textContent=d;cal.append(e)});
  for(let i=0;i<first;i++){let e=document.createElement('div');e.className='day empty';cal.append(e)}
- for(let d=1;d<=days;d++){let k=key(y,m,d),r=getRec(k),b=document.createElement('button');b.className='day'+(r.blackout?' blackout':'')+(k===selectedKey?' selected':'');b.style.background=color(r);b.textContent=d;b.addEventListener('click',()=>openDay(k));cal.append(b)}
+ for(let d=1;d<=days;d++){let k=key(y,m,d),exists=Object.prototype.hasOwnProperty.call(records,k),r=getRec(k),b=document.createElement('button');b.className='day'+(r.blackout?' blackout':'')+(k===selectedKey?' selected':'')+(k===key(today.getFullYear(),today.getMonth(),today.getDate())?' today':'');b.style.background=exists?color(r,true):'#26362f';b.textContent=d;b.addEventListener('click',()=>openDay(k));cal.append(b)}
  renderYear(y);
  const entries=Object.entries(records).filter(([k])=>k.startsWith(`${y}-`));
  $('yearTotal').textContent=entries.reduce((a,[,r])=>a+(Number(r.count)||0),0);
@@ -99,7 +99,7 @@ function render(){
  const logged=entries.filter(([,r])=>!r.blackout);
  $('average').textContent=logged.length?(entries.reduce((a,[,r])=>a+(Number(r.count)||0),0)/logged.length).toFixed(1):'0';
 }
-function renderYear(y){const grid=$('yearGrid');grid.innerHTML='';for(let m=0;m<12;m++){let wrap=document.createElement('div'),title=document.createElement('div'),mini=document.createElement('div');title.className='mini-title';title.textContent=new Date(y,m,1).toLocaleString(undefined,{month:'long'});mini.className='mini';let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();for(let i=0;i<first;i++){let e=document.createElement('i');e.className='mini-day empty';mini.append(e)}for(let d=1;d<=days;d++){let e=document.createElement('i');e.className='mini-day';e.style.background=color(getRec(key(y,m,d)));e.title=`${title.textContent} ${d}: ${getRec(key(y,m,d)).blackout?'Blacked out':getRec(key(y,m,d)).count+' drinks'}`;mini.append(e)}wrap.append(title,mini);grid.append(wrap)}}
+function renderYear(y){const grid=$('yearGrid');grid.innerHTML='';for(let m=0;m<12;m++){let wrap=document.createElement('div'),title=document.createElement('div'),mini=document.createElement('div');title.className='mini-title';title.textContent=new Date(y,m,1).toLocaleString(undefined,{month:'long'});mini.className='mini';let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();for(let i=0;i<first;i++){let e=document.createElement('i');e.className='mini-day empty';mini.append(e)}for(let d=1;d<=days;d++){let k=key(y,m,d),exists=Object.prototype.hasOwnProperty.call(records,k),r=getRec(k),e=document.createElement('i');e.className='mini-day'+(k===key(today.getFullYear(),today.getMonth(),today.getDate())?' today':'');e.style.background=exists?color(r,true):'transparent';e.title=`${title.textContent} ${d}: ${!exists?'Not logged':r.blackout?'Blacked out':r.count+' drinks'}`;mini.append(e)}wrap.append(title,mini);grid.append(wrap)}}
 function openDay(k){selectedKey=k;let r=getRec(k);draft={count:r.count||0,blackout:!!r.blackout};$('modalTitle').textContent=new Date(k+'T12:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});updateModal();$('backdrop').classList.add('show');render()}
 function updateModal(){$('drinkCount').textContent=draft.count;$('blackout').classList.toggle('active',draft.blackout);$('blackoutHint').textContent=draft.blackout?'Marked as blacked out — tap to undo':'Tap to mark this day as blacked out'}
 function closeModal(){$('backdrop').classList.remove('show')}
